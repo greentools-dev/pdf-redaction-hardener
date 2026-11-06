@@ -1,0 +1,900 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Permanent PDF &amp; Document Redaction Hardener — 100% Client-Side</title>
+    <meta
+      name="description"
+      content="Permanently redact sensitive text and figures from PDFs and documents. Burns blackout boxes into pixels to destroy vector text layers 100% locally in your browser."
+    />
+    <meta name="keywords" content="pdf redaction tool, permanent pdf redact, redact bank statement, blackout pdf online, secure pdf redactor, flatten pdf, client side pdf redaction" />
+    <meta name="author" content="GreenTools" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#ffffff" />
+
+    <!-- OpenGraph Meta Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Permanent PDF Redaction Hardener — 100% Client-Side" />
+    <meta
+      property="og:description"
+      content="Black out confidential text permanently by flattening documents into secure pixel images directly in your browser."
+    />
+    <meta property="og:site_name" content="GreenTools" />
+
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Tailwind CSS CDN & Lucide Icons CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+              mono: ['"JetBrains Mono"', 'monospace'],
+            },
+          },
+        },
+      };
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- PDF.js and jsPDF CDNs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- Structured JSON-LD Schema: WebApplication & FAQPage -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "name": "Permanent Document & PDF Redaction Hardener",
+            "operatingSystem": "All",
+            "applicationCategory": "SecurityApplication",
+            "browserRequirements": "Requires JavaScript, HTML5 Canvas, and modern Web Worker support.",
+            "description": "Permanently black out sensitive data from PDFs and documents by rasterizing and destroying underlying vector text layers.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "featureList": [
+              "Client-side PDF.js rendering with high-DPI canvas rasterization",
+              "Interactive click-and-drag solid blackout redaction boxes",
+              "Irreversible pixel burning that eliminates copyable underlying text",
+              "Multi-page navigation and thumbnail inspection",
+              "One-click Export Sanitized Flattened PDF",
+              "100% Client-side local execution guaranteeing compliance (GDPR/HIPAA)"
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Why do conventional PDF redactions fail or get leaked?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Many software programs merely place a black visual rectangle on top of the text without removing the underlying text layer. Anyone can select, copy, or remove the black box to read the confidential text underneath. Our tool converts pages into flattened high-res bitmaps where blacked-out pixels permanently replace the original content."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can an attacker copy or search redacted text in the exported PDF?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. Because the exported PDF is completely flattened into a secure image stream, there is zero selectable vector text or metadata remaining under the black boxes."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Are my legal contracts or bank statements sent to any server?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. PDF rendering, box drawing, and export occur 100% locally in your web browser tab. Your sensitive documents never leave your device."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does this tool work completely offline?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. Once loaded, all PDF parsing and canvas raster operations work without an active internet connection."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+
+    <style>
+      :root {
+        --grid-line: rgba(15, 23, 42, 0.04);
+      }
+      .bg-subtle-grid {
+        background-size: 24px 24px;
+        background-image:
+          linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+          linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+      }
+      .custom-scroll::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      .custom-scroll::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scroll::-webkit-scrollbar-thumb {
+        background: rgba(148, 163, 184, 0.3);
+        border-radius: 4px;
+      }
+      .custom-scroll::-webkit-scrollbar-thumb:hover {
+        background: rgba(148, 163, 184, 0.5);
+      }
+    </style>
+  </head>
+
+  <body class="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased selection:bg-slate-900 selection:text-white bg-subtle-grid flex flex-col justify-between">
+    <!-- Header -->
+    <header class="border-b border-slate-200/80 bg-white/90 backdrop-blur-md sticky top-0 z-30">
+      <div class="max-w-[1360px] mx-auto flex items-center justify-between gap-6 px-4 sm:px-6 py-3.5">
+        <a href="#app" class="flex items-center gap-2.5 text-base font-bold tracking-tight text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 rounded">
+          <div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center text-white shadow-xs">
+            <i data-lucide="shield-x" class="w-4 h-4"></i>
+          </div>
+          <span>GreenTools <span class="text-xs font-normal text-slate-400">/ PDF Redaction Hardener</span></span>
+        </a>
+
+        <nav aria-label="Quick links" class="hidden sm:flex items-center gap-6 text-xs sm:text-sm font-medium text-slate-600">
+          <a href="#how-to-use" class="hover:text-slate-900 transition-colors">How It Works</a>
+          <a href="#privacy" class="hover:text-slate-900 transition-colors">Privacy</a>
+          <a href="#faq" class="hover:text-slate-900 transition-colors">FAQ</a>
+        </nav>
+
+        <div class="flex items-center gap-2">
+          <button
+            id="btn-sample-top"
+            type="button"
+            class="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap"
+          >
+            Try Sample Document
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main id="app" class="max-w-[1360px] mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 flex-1">
+      
+      <!-- Initial Drop Zone & Hero -->
+      <section id="drop-view" class="max-w-2xl mx-auto text-center pt-2 sm:pt-6 pb-6">
+        <div class="inline-flex items-center gap-2 px-3 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/80 rounded-full mb-4">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 shrink-0"></i>
+          <span>100% Private · Confidential documents never uploaded to any server</span>
+        </div>
+
+        <h1 class="text-3xl sm:text-5xl font-bold tracking-tight text-slate-900">
+          Permanent PDF Redaction Hardener
+        </h1>
+
+        <p class="mt-3 text-base sm:text-lg text-slate-600 max-w-xl mx-auto leading-relaxed">
+          Draw solid blackout redactions over bank numbers, SSNs, and private names. Burns boxes into flattened pixels, permanently destroying underlying selectable text.
+        </p>
+
+        <!-- Drop Box -->
+        <div
+          id="dropzone"
+          class="mt-8 border-2 border-dashed border-slate-300 hover:border-slate-800 bg-white rounded-2xl p-8 sm:p-12 shadow-xs transition-all duration-150 cursor-pointer group"
+        >
+          <div class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-900 flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform duration-150">
+            <i data-lucide="file-lock-2" class="w-7 h-7"></i>
+          </div>
+
+          <p class="text-lg font-semibold text-slate-900">
+            Drag and drop your PDF or document image
+          </p>
+          <p class="mt-1 text-xs sm:text-sm text-slate-500">
+            Supports .pdf, .png, .jpg, and .jpeg files
+          </p>
+
+          <div class="mt-6">
+            <label
+              for="file-input"
+              class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-xs transition-colors cursor-pointer"
+            >
+              <i data-lucide="folder-open" class="w-4 h-4"></i>
+              <span>Browse document</span>
+              <input
+                id="file-input"
+                type="file"
+                accept=".pdf,image/png,image/jpeg"
+                class="sr-only"
+              />
+            </label>
+          </div>
+
+          <div class="mt-6 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-500">
+            <span>Or press <kbd class="px-1.5 py-0.5 font-mono text-[11px] bg-slate-100 rounded border border-slate-200">Ctrl+V</kbd> to paste screenshot</span>
+            <span>·</span>
+            <button
+              id="btn-sample-drop"
+              type="button"
+              class="text-indigo-600 font-medium hover:underline"
+            >
+              Load sample bank statement
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Workspace & Interactive Redaction Canvas (Progressive Disclosure) -->
+      <section id="workspace-view" class="hidden transition-all duration-300">
+        <!-- Control Toolbar Card -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs mb-6">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span id="label-filename" class="font-bold text-sm text-slate-900 truncate max-w-xs">statement.pdf</span>
+                <span id="label-page-counter" class="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md font-mono">Page 1 of 1</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1">
+                Click and drag on the document below to draw permanent blackout redactions.
+              </p>
+            </div>
+
+            <!-- Page Navigation & Tools -->
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+                <button id="btn-prev-page" type="button" class="p-1 text-slate-600 hover:text-slate-900 rounded hover:bg-slate-200 disabled:opacity-40" title="Previous page">
+                  <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                </button>
+                <span id="page-num-display" class="px-2 text-xs font-mono font-medium text-slate-700">1 / 1</span>
+                <button id="btn-next-page" type="button" class="p-1 text-slate-600 hover:text-slate-900 rounded hover:bg-slate-200 disabled:opacity-40" title="Next page">
+                  <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <button
+                id="btn-undo-box"
+                type="button"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                title="Undo last redaction box"
+              >
+                <i data-lucide="undo-2" class="w-3.5 h-3.5"></i>
+                <span>Undo</span>
+              </button>
+
+              <button
+                id="btn-clear-page"
+                type="button"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                <span>Clear Page</span>
+              </button>
+
+              <button
+                id="btn-export-pdf"
+                type="button"
+                class="inline-flex items-center gap-2 px-4 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-xs transition-colors"
+              >
+                <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                <span>Export Flattened PDF</span>
+              </button>
+
+              <button
+                id="btn-open-another"
+                type="button"
+                class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+                title="Open another file"
+              >
+                <i data-lucide="x" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Document Redaction Stage -->
+        <div class="bg-slate-200/60 rounded-2xl p-4 sm:p-8 flex justify-center overflow-auto shadow-inner min-h-[500px]">
+          <div class="relative bg-white shadow-xl rounded-lg overflow-hidden select-none border border-slate-300">
+            <!-- Background Rendered Page Canvas -->
+            <canvas id="page-canvas" class="block"></canvas>
+            <!-- Overlay Interaction Canvas for Redactions -->
+            <canvas id="overlay-canvas" class="absolute inset-0 cursor-crosshair"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sponsor Slot Container -->
+      <aside
+        id="sponsor-slot"
+        aria-label="Product Recommendation"
+        class="mt-12 max-w-3xl mx-auto bg-white border border-slate-200 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs"
+      >
+        <div class="flex items-center gap-3.5">
+          <div class="w-9 h-9 rounded-lg bg-slate-100 text-slate-900 flex items-center justify-center shrink-0">
+            <i data-lucide="file-check-2" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <div class="text-[11px] font-semibold text-slate-900 uppercase tracking-wider">
+              Legal Compliance
+            </div>
+            <p class="text-xs sm:text-sm font-medium text-slate-800 mt-0.5">
+              Handling GDPR subject access requests or HIPAA client disclosures?
+            </p>
+            <p class="text-xs text-slate-500">
+              Rasterized redactions ensure confidential records can never be recovered or reversed.
+            </p>
+          </div>
+        </div>
+        <a
+          href="#how-to-use"
+          class="px-3.5 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap shrink-0 self-end sm:self-center"
+        >
+          Learn more
+        </a>
+      </aside>
+
+      <!-- How to Use Documentation -->
+      <article id="how-to-use" class="mt-16 pt-10 border-t border-slate-200 max-w-3xl mx-auto">
+        <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+          How to Permanently Redact Documents
+        </h2>
+        <p class="mt-2 text-sm text-slate-600 leading-relaxed">
+          Standard black rectangles in Acrobat or Word leave the underlying text layer intact. Here is how true pixel redaction works:
+        </p>
+
+        <div class="mt-6 space-y-4">
+          <div class="flex items-start gap-3">
+            <div class="w-6 h-6 rounded-full bg-slate-100 text-slate-800 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">1</div>
+            <div>
+              <h3 class="text-sm font-semibold text-slate-900">Drop Your PDF or Image</h3>
+              <p class="text-xs text-slate-600 mt-0.5">
+                Drop your document into the box. PDF.js immediately renders the pages onto a high-resolution local canvas.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3">
+            <div class="w-6 h-6 rounded-full bg-slate-100 text-slate-800 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">2</div>
+            <div>
+              <h3 class="text-sm font-semibold text-slate-900">Click &amp; Drag Blackout Boxes</h3>
+              <p class="text-xs text-slate-600 mt-0.5">
+                Draw rectangles over bank balances, credit card numbers, Social Security numbers, or names. You can redact multiple sections across any page.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3">
+            <div class="w-6 h-6 rounded-full bg-slate-100 text-slate-800 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">3</div>
+            <div>
+              <h3 class="text-sm font-semibold text-slate-900">Export Flattened PDF</h3>
+              <p class="text-xs text-slate-600 mt-0.5">
+                Click <strong>Export Flattened PDF</strong>. The tool burns your black boxes into the page pixels and packages them into a clean PDF. No recipient can highlight, copy, or unmask the underlying text.
+              </p>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Privacy Guarantee -->
+      <section id="privacy" class="mt-14 pt-10 border-t border-slate-200 max-w-3xl mx-auto">
+        <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+          Privacy &amp; Security Guarantee
+        </h2>
+        <div class="mt-4 p-4 rounded-xl bg-slate-100/70 border border-slate-200 text-xs text-slate-600 leading-relaxed">
+          Tax returns, payroll stubs, and legal contracts require strict confidentiality. All PDF rendering, blackout drawing, and PDF re-encoding run 100% inside your web browser. Zero bytes or document data are ever sent over the network.
+        </div>
+      </section>
+
+      <!-- FAQ Section -->
+      <section id="faq" class="mt-14 pt-10 border-t border-slate-200 max-w-3xl mx-auto">
+        <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 mb-6">
+          Frequently Asked Questions
+        </h2>
+
+        <div class="space-y-4">
+          <div class="p-4 bg-white border border-slate-200 rounded-xl">
+            <h3 class="text-sm font-semibold text-slate-900">Why can traditional PDF redactions be reversed?</h3>
+            <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+              Standard PDF annotators only draw a visual rectangle in an annotation layer. If the author forgets to execute a destructive "Sanitize Document" step, the underlying vector fonts and searchable text remain present under the black box.
+            </p>
+          </div>
+
+          <div class="p-4 bg-white border border-slate-200 rounded-xl">
+            <h3 class="text-sm font-semibold text-slate-900">How does this tool guarantee irreversible redaction?</h3>
+            <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+              We render the document onto an HTML5 canvas bitmap, paint pure black pixels directly over the coordinates, and export a fresh PDF composed strictly of raster page images. The vector text layer is destroyed completely.
+            </p>
+          </div>
+
+          <div class="p-4 bg-white border border-slate-200 rounded-xl">
+            <h3 class="text-sm font-semibold text-slate-900">Can I redact multi-page PDFs?</h3>
+            <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+              Yes. You can navigate between pages, draw redactions on any page, and export the complete multi-page document into a single flattened PDF.
+            </p>
+          </div>
+
+          <div class="p-4 bg-white border border-slate-200 rounded-xl">
+            <h3 class="text-sm font-semibold text-slate-900">Does this tool work completely offline?</h3>
+            <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+              Yes. All rendering and generation scripts are self-contained and run fully offline without an internet connection.
+            </p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-200/80 bg-white py-6 text-xs text-slate-500">
+      <div class="max-w-[1360px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <p>GreenTools · 100% Client-Side PDF Redaction Hardener</p>
+        <div class="flex items-center gap-5">
+          <a href="#app" class="hover:text-slate-900 transition-colors">Back to top</a>
+          <a href="#how-to-use" class="hover:text-slate-900 transition-colors">How It Works</a>
+          <a href="#privacy" class="hover:text-slate-900 transition-colors">Privacy</a>
+          <a href="#faq" class="hover:text-slate-900 transition-colors">FAQ</a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Client-Side Engine Script -->
+    <script>
+      (function () {
+        'use strict';
+
+        // Set PDF.js worker
+        if (window.pdfjsLib) {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        var dropzone = document.getElementById('dropzone');
+        var fileInput = document.getElementById('file-input');
+        var dropView = document.getElementById('drop-view');
+        var workspaceView = document.getElementById('workspace-view');
+
+        var labelFilename = document.getElementById('label-filename');
+        var labelPageCounter = document.getElementById('label-page-counter');
+        var pageNumDisplay = document.getElementById('page-num-display');
+        var btnPrevPage = document.getElementById('btn-prev-page');
+        var btnNextPage = document.getElementById('btn-next-page');
+
+        var pageCanvas = document.getElementById('page-canvas');
+        var pCtx = pageCanvas.getContext('2d');
+        var overlayCanvas = document.getElementById('overlay-canvas');
+        var oCtx = overlayCanvas.getContext('2d');
+
+        var btnUndoBox = document.getElementById('btn-undo-box');
+        var btnClearPage = document.getElementById('btn-clear-page');
+        var btnExportPdf = document.getElementById('btn-export-pdf');
+        var btnOpenAnother = document.getElementById('btn-open-another');
+        var btnSampleTop = document.getElementById('btn-sample-top');
+        var btnSampleDrop = document.getElementById('btn-sample-drop');
+
+        var appState = {
+          fileName: 'document.pdf',
+          pdfDoc: null,
+          totalPages: 1,
+          currentPage: 1,
+          isImageDoc: false,
+          imageElement: null,
+          redactionsByPage: {}, // { [pageNum]: [ { x, y, w, h } ] }
+          isDrawing: false,
+          startX: 0,
+          startY: 0
+        };
+
+        function renderCurrentPage() {
+          if (appState.isImageDoc && appState.imageElement) {
+            var img = appState.imageElement;
+            var maxW = 800;
+            var scale = Math.min(1.0, maxW / img.width);
+            var w = Math.round(img.width * scale);
+            var h = Math.round(img.height * scale);
+
+            pageCanvas.width = w;
+            pageCanvas.height = h;
+            overlayCanvas.width = w;
+            overlayCanvas.height = h;
+
+            pCtx.drawImage(img, 0, 0, w, h);
+            drawRedactions();
+            updateNavigation();
+            return;
+          }
+
+          if (!appState.pdfDoc) return;
+
+          appState.pdfDoc.getPage(appState.currentPage).then(function (page) {
+            var viewport = page.getViewport({ scale: 1.5 });
+            pageCanvas.width = viewport.width;
+            pageCanvas.height = viewport.height;
+            overlayCanvas.width = viewport.width;
+            overlayCanvas.height = viewport.height;
+
+            var renderContext = {
+              canvasContext: pCtx,
+              viewport: viewport
+            };
+
+            page.render(renderContext).promise.then(function () {
+              drawRedactions();
+              updateNavigation();
+            });
+          });
+        }
+
+        function drawRedactions() {
+          oCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+          var boxes = appState.redactionsByPage[appState.currentPage] || [];
+
+          boxes.forEach(function (box) {
+            oCtx.fillStyle = '#000000';
+            oCtx.fillRect(box.x, box.y, box.w, box.h);
+
+            // Redaction border highlight
+            oCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            oCtx.lineWidth = 1;
+            oCtx.strokeRect(box.x, box.y, box.w, box.h);
+          });
+        }
+
+        function updateNavigation() {
+          labelFilename.textContent = appState.fileName;
+          labelPageCounter.textContent = 'Page ' + appState.currentPage + ' of ' + appState.totalPages;
+          pageNumDisplay.textContent = appState.currentPage + ' / ' + appState.totalPages;
+          btnPrevPage.disabled = (appState.currentPage <= 1);
+          btnNextPage.disabled = (appState.currentPage >= appState.totalPages);
+        }
+
+        // Overlay Mouse & Touch Events for drawing redaction boxes
+        function getCanvasCoords(e) {
+          var rect = overlayCanvas.getBoundingClientRect();
+          var clientX = e.clientX || (e.touches && e.touches[0].clientX);
+          var clientY = e.clientY || (e.touches && e.touches[0].clientY);
+          var scaleX = overlayCanvas.width / rect.width;
+          var scaleY = overlayCanvas.height / rect.height;
+
+          return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+          };
+        }
+
+        overlayCanvas.addEventListener('mousedown', function (e) {
+          appState.isDrawing = true;
+          var coords = getCanvasCoords(e);
+          appState.startX = coords.x;
+          appState.startY = coords.y;
+        });
+
+        window.addEventListener('mousemove', function (e) {
+          if (!appState.isDrawing) return;
+          var coords = getCanvasCoords(e);
+          drawRedactions();
+
+          var curW = coords.x - appState.startX;
+          var curH = coords.y - appState.startY;
+
+          oCtx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+          oCtx.fillRect(appState.startX, appState.startY, curW, curH);
+          oCtx.strokeStyle = '#ef4444';
+          oCtx.lineWidth = 1.5;
+          oCtx.strokeRect(appState.startX, appState.startY, curW, curH);
+        });
+
+        window.addEventListener('mouseup', function (e) {
+          if (!appState.isDrawing) return;
+          appState.isDrawing = false;
+          var coords = getCanvasCoords(e);
+
+          var x = Math.min(appState.startX, coords.x);
+          var y = Math.min(appState.startY, coords.y);
+          var w = Math.abs(coords.x - appState.startX);
+          var h = Math.abs(coords.y - appState.startY);
+
+          if (w > 5 && h > 5) {
+            if (!appState.redactionsByPage[appState.currentPage]) {
+              appState.redactionsByPage[appState.currentPage] = [];
+            }
+            appState.redactionsByPage[appState.currentPage].push({ x: x, y: y, w: w, h: h });
+          }
+
+          drawRedactions();
+        });
+
+        // Navigation
+        btnPrevPage.addEventListener('click', function () {
+          if (appState.currentPage > 1) {
+            appState.currentPage--;
+            renderCurrentPage();
+          }
+        });
+
+        btnNextPage.addEventListener('click', function () {
+          if (appState.currentPage < appState.totalPages) {
+            appState.currentPage++;
+            renderCurrentPage();
+          }
+        });
+
+        btnUndoBox.addEventListener('click', function () {
+          var boxes = appState.redactionsByPage[appState.currentPage];
+          if (boxes && boxes.length > 0) {
+            boxes.pop();
+            drawRedactions();
+          }
+        });
+
+        btnClearPage.addEventListener('click', function () {
+          appState.redactionsByPage[appState.currentPage] = [];
+          drawRedactions();
+        });
+
+        // PDF & Image Loader
+        function loadFile(file) {
+          appState.fileName = file.name;
+          appState.redactionsByPage = {};
+          appState.currentPage = 1;
+
+          var reader = new FileReader();
+
+          if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+            appState.isImageDoc = false;
+            reader.onload = function (e) {
+              var typedArray = new Uint8Array(e.target.result);
+              window.pdfjsLib.getDocument({ data: typedArray }).promise.then(function (pdf) {
+                appState.pdfDoc = pdf;
+                appState.totalPages = pdf.numPages;
+                dropView.classList.add('hidden');
+                workspaceView.classList.remove('hidden');
+                renderCurrentPage();
+
+                if (window.lucide && window.lucide.createIcons) {
+                  window.lucide.createIcons();
+                }
+              }).catch(function (err) {
+                alert('Could not open PDF: ' + err.message);
+              });
+            };
+            reader.readAsArrayBuffer(file);
+          } else {
+            // Image file
+            appState.isImageDoc = true;
+            appState.totalPages = 1;
+            reader.onload = function (e) {
+              var img = new Image();
+              img.onload = function () {
+                appState.imageElement = img;
+                dropView.classList.add('hidden');
+                workspaceView.classList.remove('hidden');
+                renderCurrentPage();
+
+                if (window.lucide && window.lucide.createIcons) {
+                  window.lucide.createIcons();
+                }
+              };
+              img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+
+        // Export Flattened Secure PDF
+        btnExportPdf.addEventListener('click', async function () {
+          btnExportPdf.disabled = true;
+          btnExportPdf.innerHTML = '<span>Burning Pixels &amp; Exporting...</span>';
+
+          var jsPDF = window.jspdf.jsPDF;
+          var pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+
+          var total = appState.totalPages;
+
+          for (var p = 1; p <= total; p++) {
+            if (p > 1) {
+              pdf.addPage();
+            }
+
+            // Render page onto an offscreen canvas
+            var expCanvas = document.createElement('canvas');
+            var eCtx = expCanvas.getContext('2d');
+
+            if (appState.isImageDoc) {
+              var img = appState.imageElement;
+              expCanvas.width = img.width;
+              expCanvas.height = img.height;
+              eCtx.drawImage(img, 0, 0);
+
+              // Burn boxes
+              var boxes = appState.redactionsByPage[1] || [];
+              var scaleX = img.width / overlayCanvas.width;
+              var scaleY = img.height / overlayCanvas.height;
+              boxes.forEach(function (b) {
+                eCtx.fillStyle = '#000000';
+                eCtx.fillRect(b.x * scaleX, b.y * scaleY, b.w * scaleX, b.h * scaleY);
+              });
+            } else {
+              var pdfPage = await appState.pdfDoc.getPage(p);
+              var viewport = pdfPage.getViewport({ scale: 2.0 });
+              expCanvas.width = viewport.width;
+              expCanvas.height = viewport.height;
+
+              await pdfPage.render({ canvasContext: eCtx, viewport: viewport }).promise;
+
+              // Burn boxes with coordinate ratio
+              var boxes = appState.redactionsByPage[p] || [];
+              var scaleX = viewport.width / overlayCanvas.width;
+              var scaleY = viewport.height / overlayCanvas.height;
+              boxes.forEach(function (b) {
+                eCtx.fillStyle = '#000000';
+                eCtx.fillRect(b.x * scaleX, b.y * scaleY, b.w * scaleX, b.h * scaleY);
+              });
+            }
+
+            var imgData = expCanvas.toDataURL('image/jpeg', 0.92);
+            var pageWidth = pdf.internal.pageSize.getWidth();
+            var pageHeight = pdf.internal.pageSize.getHeight();
+            pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
+          }
+
+          var outName = appState.fileName.replace(/\.[^/.]+$/, '') + '-redacted.pdf';
+          pdf.save(outName);
+
+          btnExportPdf.disabled = false;
+          btnExportPdf.innerHTML = '<i data-lucide="lock" class="w-3.5 h-3.5"></i><span>Export Flattened PDF</span>';
+          if (window.lucide && window.lucide.createIcons) {
+            window.lucide.createIcons();
+          }
+        });
+
+        // Dropzone & File Input Events
+        fileInput.addEventListener('change', function (e) {
+          if (e.target.files && e.target.files[0]) {
+            loadFile(e.target.files[0]);
+          }
+        });
+
+        dropzone.addEventListener('dragover', function (e) {
+          e.preventDefault();
+          dropzone.classList.add('border-slate-800', 'bg-slate-100/50');
+        });
+
+        dropzone.addEventListener('dragleave', function (e) {
+          e.preventDefault();
+          dropzone.classList.remove('border-slate-800', 'bg-slate-100/50');
+        });
+
+        dropzone.addEventListener('drop', function (e) {
+          e.preventDefault();
+          dropzone.classList.remove('border-slate-800', 'bg-slate-100/50');
+          if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            loadFile(e.dataTransfer.files[0]);
+          }
+        });
+
+        // Sample Bank Statement Generator
+        function loadSample() {
+          var cvs = document.createElement('canvas');
+          cvs.width = 800;
+          cvs.height = 1050;
+          var ctx = cvs.getContext('2d');
+
+          // White page
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, 800, 1050);
+
+          // Bank Header
+          ctx.fillStyle = '#0f172a';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('FIRST NATIONAL HORIZON BANK', 50, 60);
+
+          ctx.font = '14px sans-serif';
+          ctx.fillStyle = '#64748b';
+          ctx.fillText('Official Monthly Statement · Period Ending October 31, 2026', 50, 90);
+
+          // Divider
+          ctx.strokeStyle = '#e2e8f0';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(50, 110);
+          ctx.lineTo(750, 110);
+          ctx.stroke();
+
+          // Account Details (PII to be redacted)
+          ctx.fillStyle = '#1e293b';
+          ctx.font = 'bold 13px sans-serif';
+          ctx.fillText('Account Holder:', 50, 150);
+          ctx.font = '13px monospace';
+          ctx.fillText('Alexander Vance & Emily Vance', 200, 150);
+
+          ctx.font = 'bold 13px sans-serif';
+          ctx.fillText('Account Number:', 50, 180);
+          ctx.font = '13px monospace';
+          ctx.fillText('8921-4820-1928-3910', 200, 180);
+
+          ctx.font = 'bold 13px sans-serif';
+          ctx.fillText('Social Security / Tax ID:', 50, 210);
+          ctx.font = '13px monospace';
+          ctx.fillText('XXX-49-8291', 200, 210);
+
+          ctx.font = 'bold 13px sans-serif';
+          ctx.fillText('Home Address:', 50, 240);
+          ctx.font = '13px monospace';
+          ctx.fillText('742 Evergreen Terrace, Springfield, OR 97477', 200, 240);
+
+          ctx.font = 'bold 13px sans-serif';
+          ctx.fillText('Ending Ledger Balance:', 50, 270);
+          ctx.font = 'bold 14px monospace';
+          ctx.fillStyle = '#047857';
+          ctx.fillText('$142,850.42 USD', 200, 270);
+
+          // Transactions Table
+          ctx.fillStyle = '#0f172a';
+          ctx.font = 'bold 15px sans-serif';
+          ctx.fillText('Recent Account Transactions', 50, 330);
+
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillRect(50, 350, 700, 30);
+          ctx.fillStyle = '#475569';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.fillText('DATE', 60, 370);
+          ctx.fillText('DESCRIPTION', 160, 370);
+          ctx.fillText('CATEGORY', 460, 370);
+          ctx.fillText('AMOUNT', 660, 370);
+
+          var txs = [
+            ['Oct 28', 'Direct Deposit Payroll - Acme Corp', 'Income', '+$8,400.00'],
+            ['Oct 25', 'Mortgage Wire Transfer - Quicken Loans', 'Housing', '-$3,250.00'],
+            ['Oct 22', 'Medical Clinic Specialist Copay', 'Healthcare', '-$240.00'],
+            ['Oct 19', 'Whole Foods Market #1029', 'Groceries', '-$184.20'],
+            ['Oct 15', 'Stripe Vendor Payout - GreenTools Dev', 'Business', '+$4,120.00']
+          ];
+
+          ctx.font = '12px monospace';
+          var curY = 410;
+          txs.forEach(function (tx) {
+            ctx.fillStyle = '#334155';
+            ctx.fillText(tx[0], 60, curY);
+            ctx.fillText(tx[1], 160, curY);
+            ctx.fillText(tx[2], 460, curY);
+            ctx.fillText(tx[3], 660, curY);
+            curY += 35;
+          });
+
+          cvs.toBlob(function (blob) {
+            var file = new File([blob], 'bank-statement-october.png', { type: 'image/png' });
+            loadFile(file);
+          });
+        }
+
+        btnSampleTop.addEventListener('click', loadSample);
+        btnSampleDrop.addEventListener('click', function (e) {
+          e.stopPropagation();
+          loadSample();
+        });
+
+        btnOpenAnother.addEventListener('click', function () {
+          workspaceView.classList.add('hidden');
+          dropView.classList.remove('hidden');
+          fileInput.value = '';
+        });
+
+        // Initialize icons
+        if (window.lucide && window.lucide.createIcons) {
+          window.lucide.createIcons();
+        }
+      })();
+    </script>
+  </body>
+</html>
